@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-function getSupabaseMiddlewareEnv() {
+function getSupabaseProxyEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -15,12 +15,12 @@ function getSupabaseMiddlewareEnv() {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const env = getSupabaseMiddlewareEnv();
+  const env = getSupabaseProxyEnv();
 
   if (!env) {
-    console.error("OpenRE middleware skipped Supabase auth refresh: invalid env.");
+    console.error("OpenRE proxy skipped Supabase auth refresh: invalid env.");
     return response;
   }
 
@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
     await supabase.auth.getUser();
   } catch (error) {
     console.error(
-      "OpenRE middleware Supabase auth refresh failed:",
+      "OpenRE proxy Supabase auth refresh failed:",
       error instanceof Error ? error.message : "Unknown error",
     );
   }
