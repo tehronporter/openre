@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpenRE
 
-## Getting Started
+OpenRE is a seller-first real estate marketplace MVP where property owners list directly, share a public listing link, receive offers, compare them transparently, and choose the best outcome.
 
-First, run the development server:
+## MVP Focus
+
+- Seller activation: address, details, photos, publish, Offer Command Center.
+- Public shareable listing links for early offer liquidity.
+- Buyer offer submission with normalized price, offer type, financing, and closing days.
+- Seller Offer Command Center with side-by-side comparison and simple highlights.
+- Lightweight text messaging attached to listings and offers.
+
+Out of scope for now: MLS integrations, agent CRM, service provider marketplace, auction mode, AI insights, payments, escrow, e-sign, map-heavy features, and advanced messaging.
+
+## Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Auth, Postgres, Storage, Realtime
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create a Supabase project and fill in `.env`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+3. Run the SQL migration in Supabase:
+
+```bash
+supabase/migrations/20260421000000_initial_schema.sql
+```
+
+The migration creates tables, enums, indexes, RLS policies, a public `listing-images` storage bucket, and a profile trigger for new auth users.
+
+4. Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Key Routes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/` seller-first homepage
+- `/sell` seller activation entry
+- `/listings` public marketplace
+- `/listings/[slug]` public shareable listing detail
+- `/dashboard/listings/new` create listing
+- `/dashboard/listings/[id]/offers` Offer Command Center
+- `/dashboard/offers` buyer submitted offers
+- `/dashboard/messages` lightweight conversations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Verification
 
-## Learn More
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+Manual QA should cover:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Seller signs up, creates listing, uploads photos, publishes, lands in Offer Command Center.
+- Seller copies and shares the public listing link.
+- Buyer opens listing, submits an offer, and sees status in dashboard.
+- Duplicate active buyer offer is blocked.
+- Seller cannot submit an offer on their own listing.
+- Seller compares, accepts, and rejects offers with confirmation.
+- Buyer and seller can exchange text messages around a listing or offer.
+- Draft listings, private offers, and messages are protected by RLS.
