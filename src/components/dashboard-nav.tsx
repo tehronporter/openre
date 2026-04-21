@@ -4,7 +4,6 @@ const items = [
   ["Overview", "/dashboard"],
   ["Listings", "/dashboard/listings"],
   ["Offers", "/dashboard/offers"],
-  ["Messages", "/dashboard/messages"],
 ];
 
 export function DashboardNav() {

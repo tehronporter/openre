@@ -79,7 +79,7 @@ export async function getSellerListings(sellerId: string): Promise<Listing[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("listings")
-    .select("*, listing_images(*), offers(id, status, created_at)")
+    .select("*, listing_images(*), offers(id, listing_id, status, offer_price, closing_days, financing_type, offer_type, created_at)")
     .eq("seller_id", sellerId)
     .order("updated_at", { ascending: false });
   return (data || []) as Listing[];
@@ -104,6 +104,33 @@ export async function getBuyerOffers(buyerId: string): Promise<Offer[]> {
     .select("*, listings(*)")
     .eq("buyer_id", buyerId)
     .order("created_at", { ascending: false });
+  return (data || []) as Offer[];
+}
+
+export async function getSellerOffers(
+  sellerId: string,
+  filters?: {
+    listing_id?: string;
+    status?: string;
+  },
+): Promise<Offer[]> {
+  if (!hasSupabaseEnv()) return [];
+  const supabase = await createClient();
+  let query = supabase
+    .from("offers")
+    .select("*, profiles(id, full_name, email), listings!inner(*)")
+    .eq("listings.seller_id", sellerId)
+    .order("created_at", { ascending: false });
+
+  if (filters?.listing_id) {
+    query = query.eq("listing_id", filters.listing_id);
+  }
+
+  if (filters?.status) {
+    query = query.eq("status", filters.status);
+  }
+
+  const { data } = await query;
   return (data || []) as Offer[];
 }
 

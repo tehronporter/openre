@@ -69,7 +69,7 @@ export async function createListing(
       ...parsed.data,
       seller_id: user.id,
       slug,
-      street: parsed.data.street || null,
+      street: parsed.data.street,
       city_normalized: normalizeText(parsed.data.city),
       state_normalized: normalizeText(parsed.data.state),
     })
@@ -113,11 +113,8 @@ export async function createListing(
 
   revalidatePath("/");
   revalidatePath("/listings");
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/listings");
-
-  if (listing.status === "published") {
-    redirect(`/dashboard/listings/${listing.id}/offers${failedUploads ? "?upload=partial" : ""}`);
-  }
 
   redirect(`/dashboard/listings/${listing.id}${failedUploads ? "?upload=partial" : ""}`);
 }

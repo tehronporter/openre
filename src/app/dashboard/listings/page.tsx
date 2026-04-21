@@ -6,6 +6,7 @@ import { Button, LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireUser } from "@/lib/auth";
+import { listingStatusLabels } from "@/lib/constants";
 import { getSellerListings } from "@/lib/data";
 import { formatCurrency, getSiteUrl } from "@/lib/utils";
 
@@ -39,8 +40,16 @@ export default async function DashboardListingsPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-xl font-semibold">{listing.title}</h2>
-                      <Badge tone={listing.status === "published" ? "success" : "neutral"}>
-                        {listing.status}
+                      <Badge
+                        tone={
+                          listing.status === "under_contract"
+                            ? "success"
+                            : listing.status === "published"
+                              ? "warning"
+                              : "neutral"
+                        }
+                      >
+                        {listingStatusLabels[listing.status]}
                       </Badge>
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -50,7 +59,7 @@ export default async function DashboardListingsPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {listing.status === "published" ? <ShareButton url={url} /> : null}
-                    <LinkButton href={`/dashboard/listings/${listing.id}/offers`} variant="secondary">
+                    <LinkButton href={`/dashboard/listings/${listing.id}`} variant="secondary">
                       Offer Command Center
                     </LinkButton>
                     {listing.status === "published" ? (

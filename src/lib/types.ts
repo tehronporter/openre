@@ -1,4 +1,4 @@
-export type ListingStatus = "draft" | "published" | "archived";
+export type ListingStatus = "draft" | "published" | "under_contract" | "archived";
 export type PropertyType =
   | "single_family"
   | "condo"
@@ -34,7 +34,7 @@ export type Listing = {
   slug: string;
   title: string;
   description: string;
-  price: number;
+  price: number | null;
   street: string | null;
   city: string;
   state: string;

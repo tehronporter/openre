@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownUp, Check, MessageCircle, X } from "lucide-react";
+import { ArrowDownUp, Check, X } from "lucide-react";
 import { updateOfferStatus } from "@/app/actions/offers";
 import { Badge } from "@/components/ui/badge";
-import { Button, LinkButton } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ShareButton } from "@/components/share-button";
@@ -40,7 +40,8 @@ export function OfferCommandCenter({
     );
     const strongest = [...offers].sort((a, b) => {
       const priceDiff = b.offer_price - a.offer_price;
-      if (Math.abs(priceDiff) > listing.price * 0.01) return priceDiff;
+      const comparisonBase = listing.price || b.offer_price || a.offer_price || 1;
+      if (Math.abs(priceDiff) > comparisonBase * 0.01) return priceDiff;
       if (a.offer_type !== b.offer_type) return a.offer_type === "cash" ? -1 : 1;
       return a.closing_days - b.closing_days;
     })[0];
@@ -91,6 +92,57 @@ export function OfferCommandCenter({
             <Signal label="Most recent" value={formatDate(offers.find((o) => o.id === markers.recent)?.created_at)} />
             <Signal label="Pending offers" value={String(offers.filter((o) => o.status === "pending").length)} />
           </div>
+
+          <Card className="overflow-hidden">
+            <div className="border-b border-border p-5">
+              <h2 className="text-xl font-semibold">Offer comparison</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Side-by-side terms for price, close speed, buyer type, and financing.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="bg-muted text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Buyer</th>
+                    <th className="px-5 py-3 font-semibold">Offer price</th>
+                    <th className="px-5 py-3 font-semibold">Close time</th>
+                    <th className="px-5 py-3 font-semibold">Buyer type</th>
+                    <th className="px-5 py-3 font-semibold">Financing type</th>
+                    <th className="px-5 py-3 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {sortedOffers.map((offer) => (
+                    <tr key={offer.id} className={markers.strongest === offer.id ? "bg-green-50/70" : "bg-white"}>
+                      <td className="px-5 py-4 font-medium">
+                        {offer.profiles?.full_name || offer.profiles?.email || "Buyer"}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="font-semibold">{formatCurrency(offer.offer_price)}</span>
+                        {markers.highest === offer.id ? (
+                          <Badge tone="accent" className="ml-2">Highest</Badge>
+                        ) : null}
+                      </td>
+                      <td className="px-5 py-4">
+                        {offer.closing_days} days
+                        {markers.fastest === offer.id ? (
+                          <Badge tone="accent" className="ml-2">Fastest</Badge>
+                        ) : null}
+                      </td>
+                      <td className="px-5 py-4">
+                        {offer.offer_type === "cash" ? "Cash buyer" : "Financed buyer"}
+                      </td>
+                      <td className="px-5 py-4">{financingTypeLabels[offer.financing_type]}</td>
+                      <td className="px-5 py-4">
+                        <OfferStatusBadge status={offer.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -149,10 +201,12 @@ function OfferCard({
   markers: Record<string, string | undefined>;
 }) {
   const isStrongest = markers.strongest === offer.id;
+  const actionsDisabled = listing.status === "under_contract" || offer.status !== "pending";
 
   async function action(formData: FormData) {
     const status = String(formData.get("status"));
-    if (!window.confirm(`Mark this offer as ${status}?`)) return;
+    const label = status === "accepted" ? "accept" : "decline";
+    if (!window.confirm(`Are you sure you want to ${label} this offer?`)) return;
     await updateOfferStatus(formData);
   }
 
@@ -171,22 +225,12 @@ function OfferCard({
               {formatCurrency(offer.offer_price)}
             </p>
           </div>
-          <Badge
-            tone={
-              offer.status === "accepted"
-                ? "success"
-                : offer.status === "rejected"
-                  ? "danger"
-                  : "warning"
-            }
-          >
-            {offerStatusLabels[offer.status]}
-          </Badge>
+          <OfferStatusBadge status={offer.status} />
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <Fact label="Closing" value={`${offer.closing_days} days`} />
-          <Fact label="Offer type" value={offer.offer_type === "cash" ? "Cash" : "Financed"} />
+          <Fact label="Buyer type" value={offer.offer_type === "cash" ? "Cash buyer" : "Financed buyer"} />
           <Fact label="Financing" value={financingTypeLabels[offer.financing_type]} />
         </div>
 
@@ -206,27 +250,36 @@ function OfferCard({
           <form action={action}>
             <input type="hidden" name="offer_id" value={offer.id} />
             <input type="hidden" name="status" value="accepted" />
-            <Button size="sm" disabled={offer.status === "accepted"}>
+            <Button size="sm" disabled={actionsDisabled}>
               <Check size={16} /> Accept
             </Button>
           </form>
           <form action={action}>
             <input type="hidden" name="offer_id" value={offer.id} />
             <input type="hidden" name="status" value="rejected" />
-            <Button size="sm" variant="danger" disabled={offer.status === "rejected"}>
-              <X size={16} /> Reject
+            <Button size="sm" variant="danger" disabled={actionsDisabled}>
+              <X size={16} /> Decline
             </Button>
           </form>
-          <LinkButton
-            href={`/dashboard/messages?listing=${listing.id}&buyer=${offer.buyer_id}&offer=${offer.id}`}
-            variant="secondary"
-            size="sm"
-          >
-            <MessageCircle size={16} /> Message buyer
-          </LinkButton>
         </div>
       </div>
     </Card>
+  );
+}
+
+function OfferStatusBadge({ status }: { status: Offer["status"] }) {
+  return (
+    <Badge
+      tone={
+        status === "accepted"
+          ? "success"
+          : status === "rejected"
+            ? "danger"
+            : "warning"
+      }
+    >
+      {offerStatusLabels[status]}
+    </Badge>
   );
 }
 

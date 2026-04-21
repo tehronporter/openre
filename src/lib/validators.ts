@@ -23,8 +23,8 @@ export const signInSchema = z.object({
 export const listingSchema = z.object({
   title: z.string().trim().min(8, "Use a clear listing title."),
   description: z.string().trim().min(30, "Add a useful property description."),
-  price: z.coerce.number().positive("Price must be greater than zero."),
-  street: z.string().trim().optional(),
+  price: optionalNumber,
+  street: z.string().trim().min(5, "Address is required."),
   city: z.string().trim().min(2, "City is required."),
   state: z.string().trim().min(2, "State is required.").max(24),
   zip: z.string().trim().min(5, "ZIP is required.").max(12),

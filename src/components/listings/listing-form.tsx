@@ -35,8 +35,13 @@ export function ListingForm() {
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <Label htmlFor="street">Street address</Label>
-            <Input id="street" name="street" placeholder="Optional for public display" />
+            <Label htmlFor="street">Address</Label>
+            <Input
+              id="street"
+              name="street"
+              placeholder="123 Main Street"
+              required
+            />
           </div>
           <div>
             <Label htmlFor="city">City</Label>
@@ -73,8 +78,8 @@ export function ListingForm() {
             />
           </div>
           <div>
-            <Label htmlFor="price">Asking price</Label>
-            <Input id="price" name="price" type="number" min="1" required />
+            <Label htmlFor="price">Price expectation</Label>
+            <Input id="price" name="price" type="number" min="1" placeholder="Optional" />
           </div>
           <div>
             <Label htmlFor="property_type">Property type</Label>
@@ -135,7 +140,7 @@ export function ListingForm() {
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button name="status" value="published" disabled={pending} size="lg">
-          {pending ? "Publishing..." : "Publish listing"}
+          {pending ? "Publishing..." : "Publish Listing"}
         </Button>
         <Button
           name="status"

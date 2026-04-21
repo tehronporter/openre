@@ -68,14 +68,46 @@ export async function submitOffer(
 }
 
 export async function updateOfferStatus(formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
   const id = String(formData.get("offer_id") || "");
   const status = String(formData.get("status") || "");
 
   if (!["accepted", "rejected"].includes(status)) return;
 
   const supabase = await createClient();
-  await supabase.from("offers").update({ status }).eq("id", id);
+  const { data: offer } = await supabase
+    .from("offers")
+    .select("id, listing_id, listings!inner(id, seller_id)")
+    .eq("id", id)
+    .eq("listings.seller_id", user.id)
+    .single();
 
+  if (!offer) return;
+
+  if (status === "accepted") {
+    await supabase
+      .from("offers")
+      .update({ status: "accepted" })
+      .eq("id", id);
+
+    await supabase
+      .from("offers")
+      .update({ status: "rejected" })
+      .eq("listing_id", offer.listing_id)
+      .neq("id", id)
+      .eq("status", "pending");
+
+    await supabase
+      .from("listings")
+      .update({ status: "under_contract" })
+      .eq("id", offer.listing_id)
+      .eq("seller_id", user.id);
+  } else {
+    await supabase.from("offers").update({ status: "rejected" }).eq("id", id);
+  }
+
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/listings");
+  revalidatePath(`/dashboard/listings/${offer.listing_id}`);
+  revalidatePath("/dashboard/offers");
 }

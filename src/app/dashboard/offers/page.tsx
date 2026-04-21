@@ -1,34 +1,68 @@
-import { MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { LinkButton } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Select } from "@/components/ui/field";
 import { requireUser } from "@/lib/auth";
 import { financingTypeLabels, offerStatusLabels } from "@/lib/constants";
-import { getBuyerOffers } from "@/lib/data";
+import { getSellerListings, getSellerOffers } from "@/lib/data";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-export default async function BuyerOffersPage({
+const statusOptions = [
+  ["", "All statuses"],
+  ["pending", "Pending"],
+  ["accepted", "Accepted"],
+  ["rejected", "Declined"],
+];
+
+export default async function SellerOffersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ submitted?: string }>;
+  searchParams: Promise<{ listing?: string; status?: string }>;
 }) {
   const [query, user] = await Promise.all([searchParams, requireUser()]);
-  const offers = await getBuyerOffers(user.id);
+  const [listings, offers] = await Promise.all([
+    getSellerListings(user.id),
+    getSellerOffers(user.id, {
+      listing_id: query.listing,
+      status: query.status,
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
-      {query.submitted ? (
-        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-success">
-          Offer submitted. You can track its status here.
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-primary">
+            All seller offers
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold">Offers across listings</h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">
+            Filter every offer received across your properties and jump into the
+            listing command center to compare terms.
+          </p>
         </div>
-      ) : null}
-      <div>
-        <h1 className="text-3xl font-semibold">Submitted offers</h1>
-        <p className="mt-2 text-muted-foreground">
-          Track your offer status and continue conversations related to listings.
-        </p>
+        <LinkButton href="/dashboard/listings/new">Create New Listing</LinkButton>
       </div>
+
+      <form className="grid gap-3 rounded-lg border border-border bg-surface p-4 md:grid-cols-[1fr_220px_auto]">
+        <Select name="listing" defaultValue={query.listing || ""}>
+          <option value="">All listings</option>
+          {listings.map((listing) => (
+            <option key={listing.id} value={listing.id}>
+              {listing.title}
+            </option>
+          ))}
+        </Select>
+        <Select name="status" defaultValue={query.status || ""}>
+          {statusOptions.map(([value, label]) => (
+            <option key={label} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        <Button type="submit">Filter</Button>
+      </form>
 
       {offers.length ? (
         <div className="grid gap-4">
@@ -37,50 +71,50 @@ export default async function BuyerOffersPage({
               <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-semibold">
-                      {offer.listings?.title || "Listing"}
-                    </h2>
-                    <Badge
-                      tone={
-                        offer.status === "accepted"
-                          ? "success"
-                          : offer.status === "rejected"
-                            ? "danger"
-                            : "warning"
-                      }
-                    >
-                      {offerStatusLabels[offer.status]}
-                    </Badge>
+                    <p className="text-xl font-semibold">
+                      {formatCurrency(offer.offer_price)}
+                    </p>
+                    <OfferBadge status={offer.status} />
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {formatCurrency(offer.offer_price)} · {financingTypeLabels[offer.financing_type]} ·{" "}
-                    {offer.closing_days} day close · Submitted {formatDate(offer.created_at)}
+                    {offer.listings?.title || "Listing"} ·{" "}
+                    {offer.offer_type === "cash" ? "Cash buyer" : "Financed buyer"} ·{" "}
+                    {financingTypeLabels[offer.financing_type]} · {offer.closing_days} day close
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Submitted {formatDate(offer.created_at)}
                   </p>
                 </div>
-                {offer.listings ? (
-                  <div className="flex gap-2">
-                    <LinkButton href={`/listings/${offer.listings.slug}`} variant="secondary">
-                      View listing
-                    </LinkButton>
-                    <LinkButton
-                      href={`/dashboard/messages?listing=${offer.listing_id}&seller=${offer.listings.seller_id}&buyer=${user.id}&offer=${offer.id}`}
-                      variant="ghost"
-                    >
-                      <MessageCircle size={16} /> Message
-                    </LinkButton>
-                  </div>
-                ) : null}
+                <LinkButton href={`/dashboard/listings/${offer.listing_id}`} variant="secondary">
+                  Compare in Command Center
+                </LinkButton>
               </div>
             </Card>
           ))}
         </div>
       ) : (
         <EmptyState
-          title="No submitted offers"
-          description="Browse listings and submit an offer when you find a property that fits."
-          action={<LinkButton href="/listings">Browse listings</LinkButton>}
+          title="No offers yet"
+          description="No offers match these filters. Share your listing to attract buyers."
+          action={<LinkButton href="/dashboard/listings">View listings</LinkButton>}
         />
       )}
     </div>
+  );
+}
+
+function OfferBadge({ status }: { status: "pending" | "accepted" | "rejected" | "withdrawn" }) {
+  return (
+    <Badge
+      tone={
+        status === "accepted"
+          ? "success"
+          : status === "rejected"
+            ? "danger"
+            : "warning"
+      }
+    >
+      {offerStatusLabels[status]}
+    </Badge>
   );
 }

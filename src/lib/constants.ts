@@ -50,8 +50,18 @@ export const offerStatuses = ["pending", "accepted", "rejected", "withdrawn"] as
 export const offerStatusLabels: Record<(typeof offerStatuses)[number], string> = {
   pending: "Pending",
   accepted: "Accepted",
-  rejected: "Rejected",
+  rejected: "Declined",
   withdrawn: "Withdrawn",
+};
+
+export const listingStatusLabels: Record<
+  "draft" | "published" | "under_contract" | "archived",
+  string
+> = {
+  draft: "Draft",
+  published: "Active",
+  under_contract: "Under contract",
+  archived: "Archived",
 };
 
 export const MAX_LISTING_IMAGES = 8;

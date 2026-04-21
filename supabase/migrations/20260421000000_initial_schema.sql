@@ -1,6 +1,6 @@
 create extension if not exists "pgcrypto";
 
-create type public.listing_status as enum ('draft', 'published', 'archived');
+create type public.listing_status as enum ('draft', 'published', 'under_contract', 'archived');
 create type public.property_type as enum ('single_family', 'condo', 'townhouse', 'multi_family', 'land');
 create type public.property_condition as enum ('move_in_ready', 'minor_updates', 'needs_work', 'investment');
 create type public.offer_type as enum ('cash', 'financed');
@@ -21,7 +21,7 @@ create table public.listings (
   slug text not null unique,
   title text not null,
   description text not null,
-  price integer not null check (price > 0),
+  price integer check (price is null or price > 0),
   street text,
   city text not null,
   state text not null,
